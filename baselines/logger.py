@@ -332,11 +332,12 @@ def configure(log_dir=None, format_strs=None):
     assert isinstance(log_dir, str)
     os.makedirs(log_dir, exist_ok=True)
 
-    if format_strs is None:
+    strs = format_strs
+    if strs is None:
         strs = os.getenv('OPENAI_LOG_FORMAT')
 
-    format_strs = strs.split(',') if strs else ['stdout', 'log', 'csv']
-    output_formats = [make_output_format(f, log_dir) for f in format_strs]
+    log_formats = strs.split(',') if strs else ['stdout', 'log', 'csv']
+    output_formats = [make_output_format(f, log_dir) for f in log_formats]
 
     Logger.CURRENT = Logger(log_dir=log_dir, output_formats=output_formats)
     log('Logging to %s'%log_dir)
