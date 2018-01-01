@@ -334,10 +334,10 @@ def configure(log_dir=None, format_strs=None):
 
     if format_strs is None:
         strs = os.getenv('OPENAI_LOG_FORMAT')
-        format_strs = strs.split(',') if strs else LOG_OUTPUT_FORMATS
+        format_strs = strs.split(',') if strs else ['stdout', 'log', 'csv']
 
     # Maintaining the previous logic
-    output_formats = [make_output_format(f, log_dir) for f in format_strs if not (f == 'json' or f == 'tensorboard')]
+    output_formats = [make_output_format(f, log_dir) for f in format_strs]
 
     Logger.CURRENT = Logger(log_dir=log_dir, output_formats=output_formats)
     log('Logging to %s'%log_dir)
