@@ -3,6 +3,7 @@ import sys
 import argparse
 from baselines import bench, logger
 
+
 def train(env_id, num_timesteps, seed, policy):
     from baselines.common import set_global_seeds
     from baselines.common.atari_wrappers import make_atari, wrap_deepmind
@@ -43,16 +44,20 @@ def train(env_id, num_timesteps, seed, policy):
         cliprange=lambda f : f * 0.1,
         total_timesteps=int(num_timesteps * 1.1))
 
+
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--env', help='environment ID', default='BreakoutNoFrameskip-v4')
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
     parser.add_argument('--policy', help='Policy architecture', choices=['cnn', 'lstm', 'lnlstm'], default='cnn')
     parser.add_argument('--num-timesteps', type=int, default=int(10e6))
+    parser.add_argument('--log-dir', help='Log directory where all logs will be written', default=None)
+    parser.add_argument('--log-formats', help='Formats in which the logs will be written.', default=None)
     args = parser.parse_args()
-    logger.configure()
+    logger.configure(args.log_dir, args.log_formats)
     train(args.env, num_timesteps=args.num_timesteps, seed=args.seed,
         policy=args.policy)
+
 
 if __name__ == '__main__':
     main()

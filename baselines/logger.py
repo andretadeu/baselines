@@ -8,8 +8,7 @@ import datetime
 import tempfile
 from mpi4py import MPI
 
-LOG_OUTPUT_FORMATS = ['stdout', 'log', 'csv']
-# Also valid: json, tensorboard
+LOG_OUTPUT_FORMATS = ['stdout', 'log', 'csv', 'json', 'tensorboard']
 
 DEBUG = 10
 INFO = 20
@@ -18,13 +17,16 @@ ERROR = 40
 
 DISABLED = 50
 
+
 class KVWriter(object):
     def writekvs(self, kvs):
         raise NotImplementedError
 
+
 class SeqWriter(object):
     def writeseq(self, seq):
         raise NotImplementedError
+
 
 class HumanOutputFormat(KVWriter, SeqWriter):
     def __init__(self, filename_or_file):
@@ -83,6 +85,7 @@ class HumanOutputFormat(KVWriter, SeqWriter):
         if self.own_file:
             self.file.close()
 
+
 class JSONOutputFormat(KVWriter):
     def __init__(self, filename):
         self.file = open(filename, 'wt')
@@ -97,6 +100,7 @@ class JSONOutputFormat(KVWriter):
 
     def close(self):
         self.file.close()
+
 
 class CSVOutputFormat(KVWriter):
     def __init__(self, filename):
@@ -169,6 +173,7 @@ class TensorBoardOutputFormat(KVWriter):
             self.writer.Close()
             self.writer = None
 
+
 def make_output_format(format, ev_dir):
     os.makedirs(ev_dir, exist_ok=True)
     rank = MPI.COMM_WORLD.Get_rank()
@@ -193,6 +198,7 @@ def make_output_format(format, ev_dir):
 # API
 # ================================================================
 
+
 def logkv(key, val):
     """
     Log a value of some diagnostic
@@ -200,12 +206,14 @@ def logkv(key, val):
     """
     Logger.CURRENT.logkv(key, val)
 
+
 def logkvs(d):
     """
     Log a dictionary of key-value pairs
     """
     for (k, v) in d.items():
         logkv(k, v)
+
 
 def dumpkvs():
     """
@@ -215,6 +223,7 @@ def dumpkvs():
                 the level argument here, don't print to stdout.
     """
     Logger.CURRENT.dumpkvs()
+
 
 def getkvs():
     return Logger.CURRENT.name2val
@@ -226,14 +235,18 @@ def log(*args, level=INFO):
     """
     Logger.CURRENT.log(*args, level=level)
 
+
 def debug(*args):
     log(*args, level=DEBUG)
+
 
 def info(*args):
     log(*args, level=INFO)
 
+
 def warn(*args):
     log(*args, level=WARN)
+
 
 def error(*args):
     log(*args, level=ERROR)
@@ -245,6 +258,7 @@ def set_level(level):
     """
     Logger.CURRENT.set_level(level)
 
+
 def get_dir():
     """
     Get directory that log files are being written to.
@@ -255,19 +269,19 @@ def get_dir():
 record_tabular = logkv
 dump_tabular = dumpkvs
 
-# ================================================================
-# Backend
-# ================================================================
 
 class Logger(object):
+    """
+    Logging front-end
+    """
     DEFAULT = None  # A logger with no output files. (See right below class definition)
                     # So that you can still log to the terminal without setting up any output files
     CURRENT = None  # Current logger being used by the free functions above
 
-    def __init__(self, dir, output_formats):
+    def __init__(self, log_dir, output_formats):
         self.name2val = {}  # values this iteration
         self.level = INFO
-        self.dir = dir
+        self.log_dir = log_dir
         self.output_formats = output_formats
 
     # Logging API, forwarded
@@ -292,7 +306,7 @@ class Logger(object):
         self.level = level
 
     def get_dir(self):
-        return self.dir
+        return self.log_dir
 
     def close(self):
         for fmt in self.output_formats:
@@ -305,24 +319,29 @@ class Logger(object):
             if isinstance(fmt, SeqWriter):
                 fmt.writeseq(map(str, args))
 
-Logger.DEFAULT = Logger.CURRENT = Logger(dir=None, output_formats=[HumanOutputFormat(sys.stdout)])
 
-def configure(dir=None, format_strs=None):
-    if dir is None:
-        dir = os.getenv('OPENAI_LOGDIR')
-    if dir is None:
-        dir = osp.join(tempfile.gettempdir(),
-            datetime.datetime.now().strftime("openai-%Y-%m-%d-%H-%M-%S-%f"))
-    assert isinstance(dir, str)
-    os.makedirs(dir, exist_ok=True)
+Logger.DEFAULT = Logger.CURRENT = Logger(log_dir=None, output_formats=[HumanOutputFormat(sys.stdout)])
+
+
+def configure(log_dir=None, format_strs=None):
+    if log_dir is None:
+        log_dir = os.getenv('OPENAI_LOGDIR')
+    if log_dir is None:
+        log_dir_name = datetime.datetime.now().strftime("openai-%Y-%m-%d-%H-%M-%S-%f")
+        log_dir = osp.join(tempfile.gettempdir(), log_dir_name)
+    assert isinstance(log_dir, str)
+    os.makedirs(log_dir, exist_ok=True)
 
     if format_strs is None:
         strs = os.getenv('OPENAI_LOG_FORMAT')
         format_strs = strs.split(',') if strs else LOG_OUTPUT_FORMATS
-    output_formats = [make_output_format(f, dir) for f in format_strs]
 
-    Logger.CURRENT = Logger(dir=dir, output_formats=output_formats)
-    log('Logging to %s'%dir)
+    # Maintaining the previous logic
+    output_formats = [make_output_format(f, log_dir) for f in format_strs if not (f == 'json' or f == 'tensorboard')]
+
+    Logger.CURRENT = Logger(log_dir=log_dir, output_formats=output_formats)
+    log('Logging to %s'%log_dir)
+
 
 def reset():
     if Logger.CURRENT is not Logger.DEFAULT:
@@ -330,29 +349,33 @@ def reset():
         Logger.CURRENT = Logger.DEFAULT
         log('Reset logger')
 
+
 class scoped_configure(object):
-    def __init__(self, dir=None, format_strs=None):
-        self.dir = dir
+    def __init__(self, log_dir=None, format_strs=None):
+        self.dir = log_dir
         self.format_strs = format_strs
         self.prevlogger = None
+
     def __enter__(self):
         self.prevlogger = Logger.CURRENT
         configure(dir=self.dir, format_strs=self.format_strs)
+
     def __exit__(self, *args):
         Logger.CURRENT.close()
         Logger.CURRENT = self.prevlogger
 
 # ================================================================
 
+
 def _demo():
     info("hi")
     debug("shouldn't appear")
     set_level(DEBUG)
     debug("should appear")
-    dir = "/tmp/testlogging"
-    if os.path.exists(dir):
-        shutil.rmtree(dir)
-    configure(dir=dir)
+    log_dir = "/tmp/testlogging"
+    if os.path.exists(log_dir):
+        shutil.rmtree(log_dir)
+    configure(log_dir=log_dir)
     logkv("a", 3)
     logkv("b", 2.5)
     dumpkvs()
@@ -380,9 +403,11 @@ def read_json(fname):
             ds.append(json.loads(line))
     return pandas.DataFrame(ds)
 
+
 def read_csv(fname):
     import pandas
     return pandas.read_csv(fname, index_col=None, comment='#')
+
 
 def read_tb(path):
     """
@@ -417,6 +442,7 @@ def read_tb(path):
         for (step, value) in pairs:
             data[step-1, colidx] = value
     return pandas.DataFrame(data, columns=tags)
+
 
 if __name__ == "__main__":
     _demo()

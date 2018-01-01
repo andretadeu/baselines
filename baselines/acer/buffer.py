@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Buffer(object):
     # gets obs, actions, rewards, mu's, (states, masks), dones
     def __init__(self, env, nsteps, nstack, size=50000):

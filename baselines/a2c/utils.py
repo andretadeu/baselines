@@ -1,13 +1,13 @@
 import os
-import gym
 import numpy as np
 import tensorflow as tf
-from gym import spaces
 from collections import deque
+
 
 def sample(logits):
     noise = tf.random_uniform(tf.shape(logits))
     return tf.argmax(logits - tf.log(-tf.log(noise)), 1)
+
 
 def cat_entropy(logits):
     a0 = logits - tf.reduce_max(logits, 1, keep_dims=True)
@@ -16,15 +16,19 @@ def cat_entropy(logits):
     p0 = ea0 / z0
     return tf.reduce_sum(p0 * (tf.log(z0) - a0), 1)
 
+
 def cat_entropy_softmax(p0):
     return - tf.reduce_sum(p0 * tf.log(p0 + 1e-6), axis = 1)
+
 
 def mse(pred, target):
     return tf.square(pred-target)/2.
 
+
 def ortho_init(scale=1.0):
-    def _ortho_init(shape, dtype, partition_info=None):
-        #lasagne ortho init for tf
+
+    def _ortho_init(shape, dtype=np.float32, partition_info=None):
+        # lasagne ortho init for tf
         shape = tuple(shape)
         if len(shape) == 2:
             flat_shape = shape
@@ -36,8 +40,9 @@ def ortho_init(scale=1.0):
         u, _, v = np.linalg.svd(a, full_matrices=False)
         q = u if u.shape == flat_shape else v # pick the one with the correct shape
         q = q.reshape(shape)
-        return (scale * q[:shape[0], :shape[1]]).astype(np.float32)
+        return (scale * q[:shape[0], :shape[1]]).astype(dtype)
     return _ortho_init
+
 
 def conv(x, scope, nf, rf, stride, pad='VALID', act=tf.nn.relu, init_scale=1.0):
     with tf.variable_scope(scope):
@@ -48,6 +53,7 @@ def conv(x, scope, nf, rf, stride, pad='VALID', act=tf.nn.relu, init_scale=1.0):
         h = act(z)
         return h
 
+
 def fc(x, scope, nh, act=tf.nn.relu, init_scale=1.0):
     with tf.variable_scope(scope):
         nin = x.get_shape()[1].value
@@ -57,12 +63,14 @@ def fc(x, scope, nh, act=tf.nn.relu, init_scale=1.0):
         h = act(z)
         return h
 
+
 def batch_to_seq(h, nbatch, nsteps, flat=False):
     if flat:
         h = tf.reshape(h, [nbatch, nsteps])
     else:
         h = tf.reshape(h, [nbatch, nsteps, -1])
     return [tf.squeeze(v, [1]) for v in tf.split(axis=1, num_or_size_splits=nsteps, value=h)]
+
 
 def seq_to_batch(h, flat = False):
     shape = h[0].get_shape().as_list()
@@ -73,9 +81,9 @@ def seq_to_batch(h, flat = False):
     else:
         return tf.reshape(tf.stack(values=h, axis=1), [-1])
 
+
 def lstm(xs, ms, s, scope, nh, init_scale=1.0):
     nbatch, nin = [v.value for v in xs[0].get_shape()]
-    nsteps = len(xs)
     with tf.variable_scope(scope):
         wx = tf.get_variable("wx", [nin, nh*4], initializer=ortho_init(init_scale))
         wh = tf.get_variable("wh", [nh, nh*4], initializer=ortho_init(init_scale))
@@ -97,11 +105,13 @@ def lstm(xs, ms, s, scope, nh, init_scale=1.0):
     s = tf.concat(axis=1, values=[c, h])
     return xs, s
 
+
 def _ln(x, g, b, e=1e-5, axes=[1]):
     u, s = tf.nn.moments(x, axes=axes, keep_dims=True)
     x = (x-u)/tf.sqrt(s+e)
     x = x*g+b
     return x
+
 
 def lnlstm(xs, ms, s, scope, nh, init_scale=1.0):
     nbatch, nin = [v.value for v in xs[0].get_shape()]
@@ -136,10 +146,12 @@ def lnlstm(xs, ms, s, scope, nh, init_scale=1.0):
     s = tf.concat(axis=1, values=[c, h])
     return xs, s
 
+
 def conv_to_fc(x):
     nh = np.prod([v.value for v in x.get_shape()[1:]])
     x = tf.reshape(x, [-1, nh])
     return x
+
 
 def discount_with_dones(rewards, dones, gamma):
     discounted = []
@@ -149,23 +161,29 @@ def discount_with_dones(rewards, dones, gamma):
         discounted.append(r)
     return discounted[::-1]
 
+
 def find_trainable_variables(key):
     with tf.variable_scope(key):
         return tf.trainable_variables()
 
+
 def make_path(f):
     return os.makedirs(f, exist_ok=True)
+
 
 def constant(p):
     return 1
 
+
 def linear(p):
     return 1-p
+
 
 schedules = {
     'linear':linear,
     'constant':constant
 }
+
 
 class Scheduler(object):
 
@@ -229,14 +247,17 @@ def get_by_index(x, idx):
                   idx_flattened)  # use flattened indices
     return y
 
+
 def check_shape(ts,shapes):
     i = 0
     for (t,shape) in zip(ts,shapes):
         assert t.get_shape().as_list()==shape, "id " + str(i) + " shape " + str(t.get_shape()) + str(shape)
         i += 1
 
+
 def avg_norm(t):
     return tf.reduce_mean(tf.sqrt(tf.reduce_sum(tf.square(t), axis=-1)))
+
 
 def gradient_add(g1, g2, param):
     print([g1, g2, param.name])
@@ -247,6 +268,7 @@ def gradient_add(g1, g2, param):
         return g1
     else:
         return g1 + g2
+
 
 def q_explained_variance(qpred, q):
     _, vary = tf.nn.moments(q, axes=[0, 1])

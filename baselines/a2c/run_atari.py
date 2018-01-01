@@ -36,8 +36,10 @@ def main():
     parser.add_argument('--policy', help='Policy architecture', choices=['cnn', 'lstm', 'lnlstm'], default='cnn')
     parser.add_argument('--lrschedule', help='Learning rate schedule', choices=['constant', 'linear'], default='constant')
     parser.add_argument('--num-timesteps', type=int, default=int(10e6))
+    parser.add_argument('--log-dir', help='Log directory where all logs will be written', default=None)
+    parser.add_argument('--log-formats', help='Formats in which the logs will be written.', default=None)
     args = parser.parse_args()
-    logger.configure()
+    logger.configure(args.log_dir, args.log_formats)
     train(args.env, num_timesteps=args.num_timesteps, seed=args.seed,
         policy=args.policy, lrschedule=args.lrschedule, num_cpu=16)
 

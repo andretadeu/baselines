@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-import os, logging, gym
+import os
+import logging
+import gym
 from baselines import logger
 from baselines.common import set_global_seeds
 from baselines import bench
@@ -7,6 +9,7 @@ from baselines.acer.acer_simple import learn
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from baselines.common.atari_wrappers import make_atari, wrap_deepmind
 from baselines.acer.policies import AcerCnnPolicy, AcerLstmPolicy
+
 
 def train(env_id, num_timesteps, seed, policy, lrschedule, num_cpu):
     def make_env(rank):
@@ -29,6 +32,7 @@ def train(env_id, num_timesteps, seed, policy, lrschedule, num_cpu):
     learn(policy_fn, env, seed, total_timesteps=int(num_timesteps * 1.1), lrschedule=lrschedule)
     env.close()
 
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -36,12 +40,14 @@ def main():
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
     parser.add_argument('--policy', help='Policy architecture', choices=['cnn', 'lstm', 'lnlstm'], default='cnn')
     parser.add_argument('--lrschedule', help='Learning rate schedule', choices=['constant', 'linear'], default='constant')
-    parser.add_argument('--logdir', help ='Directory for logging', default='./log')
     parser.add_argument('--num-timesteps', type=int, default=int(10e6))
+    parser.add_argument('--log-dir', help='Log directory where all logs will be written', default=None)
+    parser.add_argument('--log-formats', help='Formats in which the logs will be written.', default=None)
     args = parser.parse_args()
-    logger.configure(os.path.abspath(args.logdir))
+    logger.configure(args.log_dir, args.log_formats)
     train(args.env, num_timesteps=args.num_timesteps, seed=args.seed,
           policy=args.policy, lrschedule=args.lrschedule, num_cpu=16)
+
 
 if __name__ == '__main__':
     main()

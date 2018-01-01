@@ -2,6 +2,7 @@
 import argparse
 from baselines import bench, logger
 
+
 def train(env_id, num_timesteps, seed):
     from baselines.common import set_global_seeds
     from baselines.common.vec_env.vec_normalize import VecNormalize
@@ -15,10 +16,12 @@ def train(env_id, num_timesteps, seed):
                             intra_op_parallelism_threads=ncpu,
                             inter_op_parallelism_threads=ncpu)
     tf.Session(config=config).__enter__()
+
     def make_env():
         env = gym.make(env_id)
         env = bench.Monitor(env, logger.get_dir())
         return env
+
     env = DummyVecEnv([make_env])
     env = VecNormalize(env)
 
@@ -37,8 +40,10 @@ def main():
     parser.add_argument('--env', help='environment ID', default='Hopper-v1')
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
     parser.add_argument('--num-timesteps', type=int, default=int(1e6))
+    parser.add_argument('--log-dir', help='Log directory where all logs will be written', default=None)
+    parser.add_argument('--log-formats', help='Formats in which the logs will be written.', default=None)
     args = parser.parse_args()
-    logger.configure()
+    logger.configure(args.log_dir, args.log_formats)
     train(args.env, num_timesteps=args.num_timesteps, seed=args.seed)
 
 

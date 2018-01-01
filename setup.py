@@ -10,15 +10,19 @@ setup(name='baselines',
       packages=[package for package in find_packages()
                 if package.startswith('baselines')],
       install_requires=[
+          'tensorflow',
+          'numpy',
+          'pandas',
           'gym[mujoco,atari,classic_control]',
           'scipy',
-          'tqdm',
+          'tqdm',                               # Not being used
           'joblib',
-          'zmq',
-          'dill',
+          'zmq',                                # Not being used
+          'dill',                               # Not being used
           'azure==1.0.3',
-          'progressbar2',
+          'progressbar2',                       # Not being used
           'mpi4py',
+          'cloudpickle',
       ],
       description="OpenAI baselines: high quality implementations of reinforcement learning algorithms",
       author="OpenAI",

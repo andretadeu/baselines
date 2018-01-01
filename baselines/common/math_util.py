@@ -22,6 +22,7 @@ def discount(x, gamma):
     assert x.ndim >= 1
     return scipy.signal.lfilter([1],[1,-gamma],x[::-1], axis=0)[::-1]
 
+
 def explained_variance(ypred,y):
     """
     Computes fraction of variance that ypred explains about y.
@@ -37,6 +38,7 @@ def explained_variance(ypred,y):
     vary = np.var(y)
     return np.nan if vary==0 else 1 - np.var(y-ypred)/vary
 
+
 def explained_variance_2d(ypred, y):
     assert y.ndim == 2 and ypred.ndim == 2
     vary = np.var(y, axis=0)
@@ -44,11 +46,14 @@ def explained_variance_2d(ypred, y):
     out[vary < 1e-10] = 0
     return out
 
+
 def ncc(ypred, y):
     return np.corrcoef(ypred, y)[1,0]
 
+
 def flatten_arrays(arrs):
     return np.concatenate([arr.flat for arr in arrs])
+
 
 def unflatten_vector(vec, shapes):
     i=0
@@ -59,6 +64,7 @@ def unflatten_vector(vec, shapes):
         arrs.append(arr)
         i += size
     return arrs
+
 
 def discount_with_boundaries(X, New, gamma):
     """
@@ -71,6 +77,7 @@ def discount_with_boundaries(X, New, gamma):
     for t in range(T-2, -1, -1):
         Y[t] = X[t] + gamma * Y[t+1] * (1 - New[t+1])
     return Y
+
 
 def test_discount_with_boundaries():
     gamma=0.9

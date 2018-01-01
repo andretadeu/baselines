@@ -1,11 +1,10 @@
-import gym
-
 from baselines import deepq
 from baselines.common import set_global_seeds
 from baselines import bench
 import argparse
 from baselines import logger
 from baselines.common.atari_wrappers import make_atari
+
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -14,8 +13,10 @@ def main():
     parser.add_argument('--prioritized', type=int, default=1)
     parser.add_argument('--dueling', type=int, default=1)
     parser.add_argument('--num-timesteps', type=int, default=int(10e6))
+    parser.add_argument('--log-dir', help='Log directory where all logs will be written', default=None)
+    parser.add_argument('--log-formats', help='Formats in which the logs will be written.', default=None)
     args = parser.parse_args()
-    logger.configure()
+    logger.configure(args.log_dir, args.log_formats)
     set_global_seeds(args.seed)
     env = make_atari(args.env)
     env = bench.Monitor(env, logger.get_dir())

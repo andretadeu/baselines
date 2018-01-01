@@ -1,19 +1,13 @@
-import os.path as osp
-import gym
 import time
 import joblib
-import logging
 import numpy as np
 import tensorflow as tf
 from baselines import logger
 
 from baselines.common import set_global_seeds, explained_variance
-from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
-from baselines.common.atari_wrappers import wrap_deepmind
 
 from baselines.a2c.utils import discount_with_dones
 from baselines.a2c.utils import Scheduler, make_path, find_trainable_variables
-from baselines.a2c.policies import CnnPolicy
 from baselines.a2c.utils import cat_entropy, mse
 
 class Model(object):
