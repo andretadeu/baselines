@@ -27,20 +27,6 @@ def mse(pred, target):
 
 def ortho_init(scale=1.0):
 
-    def _convert_from_tf_type_to_np_type(dtype):
-        """
-        Convert from TensorFlow data type to Numpy data type
-        :param dtype: TensorFlow data type
-        :return: Numpy data type. If the type is not detected, fallback to np.float32
-        """
-        if dtype is tf.float16:
-            return np.float16
-        elif dtype is tf.float32:
-            return np.float32
-        elif dtype is tf.float64:
-            return np.float64
-        return np.float32
-
     def _ortho_init(shape, dtype=tf.float32, partition_info=None):
         # lasagne ortho init for tf
         shape = tuple(shape)
@@ -54,8 +40,7 @@ def ortho_init(scale=1.0):
         u, _, v = np.linalg.svd(a, full_matrices=False)
         q = u if u.shape == flat_shape else v # pick the one with the correct shape
         q = q.reshape(shape)
-        np_type = _convert_from_tf_type_to_np_type(dtype)
-        return (scale * q[:shape[0], :shape[1]]).astype(np_type)
+        return (scale * q[:shape[0], :shape[1]]).astype(dtype.as_numpy_dtype)
     return _ortho_init
 
 
