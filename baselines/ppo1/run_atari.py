@@ -4,9 +4,9 @@ from mpi4py import MPI
 from baselines.common import set_global_seeds
 from baselines import bench
 import os.path as osp
-import gym, logging
 from baselines import logger
 from baselines.common.atari_wrappers import make_atari, wrap_deepmind
+from baselines.common.cmd_util import atari_arg_parser
 
 
 def train(env_id, num_timesteps, seed, rank):
@@ -14,18 +14,14 @@ def train(env_id, num_timesteps, seed, rank):
     import baselines.common.tf_util as U
     sess = U.single_threaded_session()
     sess.__enter__()
-
     workerseed = seed + 10000 * MPI.COMM_WORLD.Get_rank()
     set_global_seeds(workerseed)
     env = make_atari(env_id)
-
     def policy_fn(name, ob_space, ac_space): #pylint: disable=W0613
         return cnn_policy.CnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space)
-
     env = bench.Monitor(env, logger.get_dir() and
         osp.join(logger.get_dir(), str(rank)))
     env.seed(workerseed)
-    gym.logger.setLevel(logging.WARN)
 
     env = wrap_deepmind(env)
     env.seed(workerseed)
@@ -42,11 +38,7 @@ def train(env_id, num_timesteps, seed, rank):
 
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--env', help='environment ID', default='PongNoFrameskip-v4')
-    parser.add_argument('--seed', help='RNG seed', type=int, default=0)
-    parser.add_argument('--num-timesteps', type=int, default=int(10e6))
+    parser = atari_arg_parser()
     parser.add_argument('--log-dir', help='Log directory where all logs will be written', default=None)
     parser.add_argument('--log-formats', help='Formats in which the logs will be written.', default=None)
     args = parser.parse_args()

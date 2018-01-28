@@ -23,6 +23,7 @@ setup(name='baselines',
           'progressbar2',                       # Not being used
           'mpi4py',
           'cloudpickle',
+          'opencv-python'
       ],
       description="OpenAI baselines: high quality implementations of reinforcement learning algorithms",
       author="OpenAI",

@@ -1,5 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
+from baselines.common.cmd_util import mujoco_arg_parser
 from baselines import bench, logger
 
 
@@ -36,10 +37,7 @@ def train(env_id, num_timesteps, seed):
 
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--env', help='environment ID', default='Hopper-v1')
-    parser.add_argument('--seed', help='RNG seed', type=int, default=0)
-    parser.add_argument('--num-timesteps', type=int, default=int(1e6))
+    parser = mujoco_arg_parser()
     parser.add_argument('--log-dir', help='Log directory where all logs will be written', default=None)
     parser.add_argument('--log-formats', help='Formats in which the logs will be written.', default=None)
     args = parser.parse_args()
@@ -49,4 +47,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
